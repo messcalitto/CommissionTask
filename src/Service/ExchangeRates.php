@@ -6,9 +6,8 @@ class ExchangeRates
 {
     private array $exchangeRates;
 
-    public function __construct(string $apiKey)
+    public function __construct(string $exchangeRatesUrl)
     {
-        $exchangeRatesUrl = "https://api.exchangeratesapi.io/latest?access_key=" . $apiKey;
         $response = @file_get_contents($exchangeRatesUrl);
 
         if ($response === false) {

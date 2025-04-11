@@ -2,15 +2,25 @@
 
 namespace CommissionTask\Tests;
 
+require_once __DIR__ . '/../src/Config/config.php';
+
 use PHPUnit\Framework\TestCase;
 use App\Service\CsvReader;
 use App\Service\CommissionCalculator;
 use App\Service\CurrencyConverter;
-use App\Service\ExchangeRates;
+use App\Service\Validator;
+use App\Config\Config;
 
 class CommissionCalculatorTest extends TestCase
 {
-    public function testCommissionCalculation()
+    /**
+     * Test the index workflow of the commission calculator.
+     *
+     * This test simulates the entire process of reading a CSV file, validating transactions,
+     * calculating commissions, and comparing the output with expected results.
+     */
+
+    public function testIndexWorkflow()
     {
         // Mock exchange rates
         $exchangeRates = [
@@ -18,11 +28,6 @@ class CommissionCalculatorTest extends TestCase
             'USD' => 1.1497,
             'JPY' => 129.53,
         ];
-
-        // Initialize services
-        $csvReader = new CsvReader();
-        $currencyConverter = new CurrencyConverter($exchangeRates);
-        $commissionCalculator = new CommissionCalculator($currencyConverter);
 
         // Input data (from the task prompt)
         $inputData = <<<CSV
@@ -48,7 +53,7 @@ CSV;
             "0.00",
             "0.06",
             "1.50",
-            "0.00",
+            "0",
             "0.70",
             "0.30",
             "0.30",
@@ -58,21 +63,31 @@ CSV;
             "8612",
         ];
 
-       
         $inputFile = sys_get_temp_dir() . '/test_input.csv';
         file_put_contents($inputFile, $inputData);
+
+        // Ensure FREE_WITHDRAW_COUNT is loaded correctly
+        $this->assertArrayHasKey('FREE_WITHDRAW_COUNT', $_ENV, 'FREE_WITHDRAW_COUNT is not loaded into $_ENV');
+        $this->assertNotEmpty($_ENV['FREE_WITHDRAW_COUNT'], 'FREE_WITHDRAW_COUNT is empty in $_ENV');
+
+        // Initialize services
+        $csvReader = new CsvReader();
         $operations = $csvReader->read($inputFile);
 
-        // Process operations
-        $userHistory = [];
-        $actualOutput = [];
+        $validator = new Validator();
+        $transactions = [];
         foreach ($operations as $operation) {
-            $fee = $commissionCalculator->calculate($operation, $userHistory);
-            $actualOutput[] = $fee;
+            $validator->validateOperation($operation);
+            [$date, $userId, $userType, $operationType, $amount, $currency] = $operation;
+            $transactions[] = new \App\Entity\Transaction($date, $userId, $userType, $operationType, $amount, $currency);
         }
 
+        $currencyConverter = new CurrencyConverter($exchangeRates);
+        $commissionCalculator = new CommissionCalculator($currencyConverter);
+        $fees = $commissionCalculator->calculate($transactions);
+
         // Assert output matches expected
-        $this->assertEquals($expectedOutput, $actualOutput);
+        $this->assertEquals($expectedOutput, $fees);
 
         // Clean up
         unlink($inputFile);

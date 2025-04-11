@@ -1,0 +1,21 @@
+<?php
+namespace App\Service;
+
+use App\Config\TransactionType;
+use App\Service\CurrencyConverter;
+
+class StrategyFactory
+{
+    public static function getStrategy(string $transactionType, CurrencyConverter $currencyConverter): Strategy
+    {
+        switch ($transactionType) {
+            case TransactionType::DEPOSIT:
+                return Deposit::getInstance($currencyConverter);
+            case TransactionType::WITHDRAW:
+                return Withdraw::getInstance($currencyConverter);
+            default:
+                throw new \InvalidArgumentException("Invalid transaction type: $transactionType");
+        }
+        
+    }
+}

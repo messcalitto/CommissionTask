@@ -7,7 +7,7 @@
 
 2. Run following command to run the script:
 
-    php script.php data/input.csv
+    php index.php data/input.csv
 
 
 3. Run following command to run the test:
