@@ -1,34 +1,69 @@
 <?php
-namespace App\Config;
 
+namespace App\Config;
 
 class Config
 {
-    public static function get(string $key, $default = null) :string
+    private array $config;
+
+    public function __construct(array $env = null)
     {
-        return $_ENV[$key] ?? $default;
+        // Use provided environment or fallback to $_ENV
+        $this->config = $env ?? $_ENV;
+        
     }
+ 
+
+    // Typed getters for specific configuration values
     
-    /**
-     * Get an environment variable as a specific type
-     */
-    public static function getInt(string $key, int $default = 0): int
+    public function getDepositFeePercentage(): string
     {
-        return (int) $_ENV[$key] ?? $default;
-    }
-    
-    public static function getFloat(string $key, float $default = 0.0): float
-    {
-        return (float) $_ENV[$key] ?? $default;
-    }
-    
-    public static function getBool(string $key, bool $default = false): bool
-    {
-        return (bool) $_ENV[$key] ?? $default;
+        return $this->config['DEPOSIT_FEE_PERCENTAGE'];
     }
 
-    public static function getExchangeRatesApiUrl(): string
+    public function getPrivateWithdrawFeePercentage(): string
     {
-        return $_ENV['EXCHANGE_RATES_API_URL']. $_ENV['EXCHANGE_RATES_API_KEY'];
+        return $this->config['PRIVATE_WITHDRAW_FEE_PERCENTAGE'];
     }
+
+    public function getBusinessWithdrawFeePercentage(): string
+    {
+        return $this->config['BUSINESS_WITHDRAW_FEE_PERCENTAGE'];
+    }
+
+    public function getFreeWithdrawLimit(): string
+    {
+        return $this->config['FREE_WITHDRAW_LIMIT'];
+    }
+
+    public function getFreeWithdrawCount(): int
+    {
+        return (int)$this->config['FREE_WITHDRAW_COUNT'];
+    }
+
+    public function getExchangeRatesApiUrl(): string
+    {
+        return $this->config['EXCHANGE_RATES_API_URL'] . '?access_key=' . $this->config['EXCHANGE_RATES_API_KEY'];
+    }
+
+    public function isDevelopmentMode(): bool
+    {
+        return $this->config['APP_ENV'] === 'development';
+    }
+    
+    public function getTestExchangeRates(): array
+    {
+        return [
+            'USD' => 1.1497,
+            'JPY' => 129.53,
+            'EUR' => 1.0
+        ];
+    }
+
+    public function getBaseCurrency(): string
+    {
+        return $this->config['BASE_CURRENCY'];
+    }
+   
+    
 }

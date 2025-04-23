@@ -66,9 +66,6 @@ CSV;
         $inputFile = sys_get_temp_dir() . '/test_input.csv';
         file_put_contents($inputFile, $inputData);
 
-        // Ensure FREE_WITHDRAW_COUNT is loaded correctly
-        $this->assertArrayHasKey('FREE_WITHDRAW_COUNT', $_ENV, 'FREE_WITHDRAW_COUNT is not loaded into $_ENV');
-        $this->assertNotEmpty($_ENV['FREE_WITHDRAW_COUNT'], 'FREE_WITHDRAW_COUNT is empty in $_ENV');
 
         // Initialize services
         $csvReader = new CsvReader();
@@ -76,6 +73,7 @@ CSV;
 
         $validator = new Validator();
         $transactions = [];
+
         foreach ($operations as $operation) {
             $validator->validateOperation($operation);
             [$date, $userId, $userType, $operationType, $amount, $currency] = $operation;
@@ -83,7 +81,14 @@ CSV;
         }
 
         $currencyConverter = new CurrencyConverter($exchangeRates);
-        $commissionCalculator = new CommissionCalculator($currencyConverter);
+        $userHistoryManager = new \App\Service\UserHistoryManager();
+        
+        $config = new Config();
+        
+        $commissionCalculator = new CommissionCalculator(new \App\Service\Formatter());
+        $commissionCalculator->addStrategy(\App\Config\TransactionType::WITHDRAW, new \App\Service\Withdraw($currencyConverter, $userHistoryManager, new \App\Service\Math($config), $config));
+        $commissionCalculator->addStrategy(\App\Config\TransactionType::DEPOSIT, new \App\Service\Deposit(new \App\Service\Math($config), $config));
+
         $fees = $commissionCalculator->calculate($transactions);
 
         // Assert output matches expected

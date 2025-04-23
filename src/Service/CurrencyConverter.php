@@ -18,7 +18,7 @@ class CurrencyConverter
         }
 
         if (!isset($this->exchangeRates[$fromCurrency]) || !isset($this->exchangeRates[$toCurrency])) {
-            throw new \Exception("Exchange rate for $fromCurrency or $toCurrency not found.");
+            throw new \InvalidArgumentException("Exchange rate for $fromCurrency or $toCurrency not found.");
         }
 
         $amountInBase = $amount / $this->exchangeRates[$fromCurrency];

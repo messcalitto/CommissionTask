@@ -3,39 +3,41 @@
 namespace App\Service;
 
 use App\Service\Formatter;
-use App\Config\TransactionType;
+use App\Service\StrategyInterface;
 
 class CommissionCalculator
 {
-   
-    private $currencyConverter;
-    private $strategies = [];
-    
-    public function __construct(CurrencyConverter $currencyConverter)
+    private $strategies;
+    private $formatter;
+
+    public function __construct(Formatter $formatter)
     {
-        $this->currencyConverter = $currencyConverter;
-        
-        // Register strategies
-        $this->strategies = [
-            TransactionType::DEPOSIT => new Deposit($currencyConverter),
-            TransactionType::WITHDRAW => new Withdraw($currencyConverter)
-        ];
+        $this->strategies = [];
+        $this->formatter = $formatter;
+    }
+
+    public function addStrategy(string $operationType, StrategyInterface $strategy): void
+    {
+        $this->strategies[$operationType] = $strategy;
     }
 
     public function calculate(array $transactions): array
     {
-
         $fees = [];
 
         foreach ($transactions as $transaction) {
-
-            $fee = $this->strategies[$transaction->getOperationType()]->calculateFee($transaction);
-
-            $fees[] = Formatter::formatOutput($fee, $transaction->getCurrency());
             
+            $operationType = $transaction->getOperationType();
+
+            if (!isset($this->strategies[$operationType])) {
+                throw new \InvalidArgumentException("No strategy found for operation type: $operationType");
+            }
+
+            $fee = $this->strategies[$operationType]->calculateFee($transaction);
+
+            $fees[] = $this->formatter->formatOutput($fee, $transaction->getCurrency());
         }
 
         return $fees;
     }
-
 }

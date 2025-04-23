@@ -2,16 +2,27 @@
 
 namespace App\Service;
 
-use App\Config\Config;
 use App\Entity\Transaction;
 use App\Service\Math;
+use App\Service\StrategyInterface;
+use App\Config\Config;
 
-
-
-class Deposit extends Strategy
+class Deposit implements StrategyInterface
 {
+    private $math;
+    private $config;
+
+    public function __construct(Math $math, Config $config)
+    {
+        $this->math = $math;
+        $this->config = $config;
+    }
+
     public function calculateFee(Transaction $transaction): float
     {
-        return Math::roundUp($transaction->getAmount() * Config::getFloat('DEPOSIT_FEE_PERCENTAGE') / 100);
+        $feePercentage = $this->config->getDepositFeePercentage();
+        $fee = $this->math->mul($transaction->getAmount(), $feePercentage);
+        $fee = $this->math->div($fee, 100);
+        return $this->math->roundUp($fee);
     }
 }

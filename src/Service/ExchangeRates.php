@@ -4,28 +4,40 @@ namespace App\Service;
 
 class ExchangeRates
 {
-    private array $exchangeRates;
+    private string $exchangeRatesUrl;
+    private $config;
 
-    public function __construct(string $exchangeRatesUrl)
+    public function __construct(string $exchangeRatesUrl, $config)
     {
-        $response = @file_get_contents($exchangeRatesUrl);
+        $this->config = $config;
+        $this->exchangeRatesUrl = $exchangeRatesUrl;
+    }
+
+    
+    public function getExchangeRates(): array
+    {
+        if ($this->config->isDevelopmentMode()) {
+            return $this->config->getTestExchangeRates();
+        }
+        
+        $response = @file_get_contents($this->exchangeRatesUrl);
 
         if ($response === false) {
-            throw new \Exception("Failed to fetch exchange rates. The server may be unavailable.");
+            throw new ExchangeRatesException("Failed to fetch exchange rates. The server may be unavailable.");
         }
 
         $data = json_decode($response, true);
 
         if (!isset($data['rates']) || !is_array($data['rates'])) {
-            throw new \Exception("Invalid response from exchange rates API. Check your API key.");
+            throw new ExchangeRatesException("Invalid response from exchange rates API. Check your API key.");
         }
 
-        $this->exchangeRates = $data['rates'];
-        $this->exchangeRates['EUR'] = 1.0; // Ensure EUR is included
+        $exchangeRates = $data['rates'];
+        $exchangeRates[$this->config->getBaseCurrency()] = 1.0; // Ensure BASE_CURRENCY is included
+        return $exchangeRates;
     }
+}
 
-    public function getRates(): array
-    {
-        return $this->exchangeRates;
-    }
+class ExchangeRatesException extends \Exception
+{
 }

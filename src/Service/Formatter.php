@@ -4,7 +4,7 @@ namespace App\Service;
 
 class Formatter
 {
-    public static function formatOutput(float $amount, string $currency): string
+    public function formatOutput(float $amount, string $currency): string
     {
         if ($currency === 'JPY') {
             return number_format($amount, 0, '.', '');
