@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Service;
+use App\Config\TransactionType;
+use App\Config\UserType;
 
 class Validator
 {
@@ -16,11 +18,11 @@ class Validator
             throw new \Exception("Invalid user ID: $userId");
         }
 
-        if (!in_array($userType, ['private', 'business'], true)) {
+        if (!in_array($userType, [UserType::PRIVATE, UserType::BUSINESS], true)) {
             throw new \Exception("Invalid user type: $userType");
         }
 
-        if (!in_array($operationType, ['deposit', 'withdraw'], true)) {
+        if (!in_array($operationType, [TransactionType::DEPOSIT, TransactionType::WITHDRAW], true)) {
             throw new \Exception("Invalid operation type: $operationType");
         }
 
