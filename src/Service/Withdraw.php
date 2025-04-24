@@ -28,7 +28,7 @@ class Withdraw implements StrategyInterface
      * @param Transaction $transaction The withdrawal transaction
      * @return float The calculated fee
      */
-    
+
     public function calculateFee(Transaction $transaction): float
     {
         $amount = $transaction->getAmount();
@@ -40,6 +40,7 @@ class Withdraw implements StrategyInterface
 
         $userType = $transaction->getUserType();
 
+        // Calculate the fee based on user type (Business or Private)
         switch ($userType) {
             case UserType::BUSINESS:
                 return $this->calculateFeeBusiness($transaction);
