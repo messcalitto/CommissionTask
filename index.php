@@ -21,8 +21,10 @@ use App\Config\TransactionType;
 
 try {
     
+    // Load environment variables
     $config = new Config($_ENV);
     
+    // Initialize services
     $math = new Math($config);
     $userHistoryManager = new UserHistoryManager();
     $exchangeRates = new ExchangeRates($config->getExchangeRatesApiUrl(), $config);
@@ -44,12 +46,14 @@ try {
     );
     
 
+    // Initialize the main application
     $app = new Application(
         new CsvReader(),
         new Validator(),
         $commissionCalculator
     );
 
+    // Run the application with command line arguments
     $app->run($argv);
 
 } catch (\Exception $e) {

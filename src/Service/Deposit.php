@@ -18,6 +18,13 @@ class Deposit implements StrategyInterface
         $this->config = $config;
     }
 
+    /**
+     * Calculates the fee for a deposit transaction based on user type
+     * 
+     * @param Transaction $transaction The deposit transaction
+     * @return float The calculated fee
+     */
+    
     public function calculateFee(Transaction $transaction): float
     {
         $feePercentage = $this->config->getDepositFeePercentage();

@@ -31,7 +31,8 @@ class Application
      *
      * @param array $argv Command line arguments.
      */
-    public function run($argv)
+
+    public function run(array $argv): void
     {
         $inputFile = $this->parseCommandLineArguments($argv);
         
@@ -52,6 +53,7 @@ class Application
      * @param array $argv Command line arguments.
      * @return string Input file path.
      */
+
     private function parseCommandLineArguments(array $argv): string
     {
         if (count($argv) < 2) {
@@ -67,6 +69,7 @@ class Application
      * @param string $inputFile Path to the input file.
      * @return array Array of operations.
      */
+
     private function readOperationsFromFile(string $inputFile): array
     {
         return $this->csvReader->read($inputFile);
@@ -78,6 +81,7 @@ class Application
      * @param array $operations Array of operations.
      * @return array Array of Transaction objects.
      */
+
     private function createTransactionsFromOperations(array $operations): array
     {
         $transactions = [];
@@ -98,6 +102,7 @@ class Application
      * @param array $operations Array of operations.
      * @throws \Exception If validation fails.
      */
+
     private function validateOperations(array $operations): void
     {
         foreach ($operations as $operation) {
@@ -111,6 +116,7 @@ class Application
      * @param array $transactions Array of Transaction objects.
      * @return array Array of calculated fees.
      */
+
     private function calculateFees(array $transactions): array
     {
         return $this->commissionCalculator->calculate($transactions);
@@ -121,6 +127,7 @@ class Application
      *
      * @param array $fees Array of calculated fees.
      */
+    
     private function outputResults(array $fees): void
     {
         foreach ($fees as $fee) {

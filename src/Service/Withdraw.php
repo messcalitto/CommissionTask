@@ -22,6 +22,13 @@ class Withdraw implements StrategyInterface
         $this->config = $config;
     }
 
+    /**
+     * Calculates the fee for a withdrawal transaction based on user type
+     * 
+     * @param Transaction $transaction The withdrawal transaction
+     * @return float The calculated fee
+     */
+    
     public function calculateFee(Transaction $transaction): float
     {
         $amount = $transaction->getAmount();
@@ -42,6 +49,16 @@ class Withdraw implements StrategyInterface
                 return 0.0;
         }
     }
+
+    /**
+     * Calculates the fee for a business user withdrawal
+     * 
+     * Business rules:
+     * - All amounts are charged at BUSINESS_WITHDRAW_FEE_PERCENTAGE
+     * 
+     * @param Transaction $transaction The withdrawal transaction
+     * @return float The calculated fee
+     */
 
     private function calculateFeeBusiness(Transaction $transaction): float
     {
@@ -64,27 +81,30 @@ class Withdraw implements StrategyInterface
 
     private function calculateFeePrivate(Transaction $transaction): float
     {
+        // Initialize the user transaction history for the current transaction
+        // This method should be called first to ensure the user history is set up correctly
         $this->userHistoryManager->initUserTransaction($transaction);
 
         $amount = $transaction->getAmount();
         $currency = $transaction->getCurrency();
 
+        // Get the user's week history
         $userWeekHistory = $this->userHistoryManager->getUserWeekHistory();
 
-        $convertedAmount = $currency === $this->config->getBaseCurrency()
-            ? $amount
-            : $this->currencyConverter->convert($amount, $currency, $this->config->getBaseCurrency());
+        // Convert the amount to the base currency (EUR) for calculations
+        // This is necessary because the fee calculation is based on the total amount in EUR
+        $convertedAmount = $this->convertToBaseCurrency($amount, $currency);
 
         // Update the user's history with the new total amount in EUR
         $this->userHistoryManager->addUserTotal($convertedAmount); 
 
          // Check if the user has free withdraw access for this week (3 withdraws up to 1000 EUR)
         if ($this->isFreeWithdraw($userWeekHistory, $convertedAmount)) {
-            
             return 0.0; // No fee for free withdraws
-
-        }   // If the user exceeds the free withdraw amount limit or has exceeded the free withdraw count
-        elseif ( $this->isFreeWithdrawLimitExceeded($userWeekHistory) ) { 
+        }   
+       
+        // If the user exceeds the free withdraw amount limit or has exceeded the free withdraw count
+        if ( $this->isFreeWithdrawLimitExceeded($userWeekHistory) ) { 
             $excessAmount = $amount;
         }
         else {
@@ -96,6 +116,28 @@ class Withdraw implements StrategyInterface
         return $this->calculateFeeForAmount($excessAmount, $currency);
     }
 
+    /**
+     * Converts the amount to the base currency (EUR) for calculations
+     * 
+     * @param float $amount The amount to convert
+     * @param string $currency The currency of the amount
+     * @return float The converted amount in base currency (EUR)
+     **/
+
+    private function convertToBaseCurrency(float $amount, string $currency): float
+    {
+        return $currency === $this->config->getBaseCurrency()
+            ? $amount
+            : $this->currencyConverter->convert($amount, $currency, $this->config->getBaseCurrency());
+    }
+
+    /**
+     * Checks if the user is eligible for free withdrawals based on their history
+     * 
+     * @param array $userWeekHistory The user's transaction history for the current week
+     * @param float $convertedAmount The converted amount in base currency (EUR)
+     * @return bool True if the user is eligible for free withdrawals, false otherwise
+     */
 
     private function isFreeWithdraw($userWeekHistory, float $convertedAmount): bool
     {
@@ -104,12 +146,27 @@ class Withdraw implements StrategyInterface
     }
 
 
+    /**
+     * Checks if the user has exceeded the free withdrawal limit
+     * 
+     * @param array $userWeekHistory The user's transaction history for the current week
+     * @return bool True if the user has exceeded the free withdrawal limit, false otherwise
+     */
+
     private function isFreeWithdrawLimitExceeded($userWeekHistory): bool
     {
         return $userWeekHistory['total'] >= $this->config->getFreeWithdrawLimit() || 
         $userWeekHistory['count'] > $this->config->getFreeWithdrawCount();
     }
 
+    /**
+     * Calculates the excess amount for fee calculation
+     * 
+     * @param array $userWeekHistory The user's transaction history for the current week
+     * @param float $amount The amount to withdraw
+     * @param string $currency The currency of the amount
+     * @return float The excess amount for fee calculation
+     */
 
     private function calculateExcessAmount($userWeekHistory, float $amount, string $currency): float
     {
@@ -118,6 +175,13 @@ class Withdraw implements StrategyInterface
         return $this->math->add($amount, $oldTotalAmount);
     }
 
+    /**
+     * Calculates the fee for the excess amount
+     * 
+     * @param float $excessAmount The excess amount for fee calculation
+     * @param string $currency The currency of the excess amount
+     * @return float The calculated fee for the excess amount
+     */
 
     private function calculateFeeForAmount(float $excessAmount, string $currency): float
     {
